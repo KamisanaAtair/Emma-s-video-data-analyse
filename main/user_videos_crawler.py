@@ -18,63 +18,71 @@ async def get_user_videos(uid):
     # 创建用户对象
     u = user.User(uid=uid)
     
-    # 获取用户投稿视频列表
-    # 默认获取第一页，每页30条数据
-    videos_data = await u.get_videos()
+    # 获取用户投稿视频列表的第一页，以获取视频总数和其他分页信息
+    first_page_data = await u.get_videos(pn=1, ps=30)
     
-    return videos_data
+    # 获取视频总数
+    total_count = first_page_data.get('page', {}).get('count', 0)
+    print(f"UP主共有 {total_count} 个视频")
+    
+    # 计算总页数（每页30条数据）
+    pages = (total_count + 29) // 30  # 向上取整
+    print(f"需要获取 {pages} 页数据")
+    
+    # 如果只有一页，直接返回第一页数据
+    if pages <= 1:
+        return first_page_data
+    
+    # 合并所有页面的数据
+    all_videos = first_page_data.get('list', {}).get('vlist', []).copy()
+    
+    # 获取剩余页面的数据
+    for page in range(2, pages + 1):
+        print(f"正在获取第 {page}/{pages} 页数据...")
+        page_data = await u.get_videos(pn=page, ps=30)
+        page_videos = page_data.get('list', {}).get('vlist', [])
+        all_videos.extend(page_videos)
+        # 添加延迟以避免请求过于频繁
+        await asyncio.sleep(0.5)
+    
+    # 构造完整的数据结构
+    result = first_page_data.copy()
+    result['list'] = result.get('list', {}).copy()
+    result['list']['vlist'] = all_videos
+    result['page'] = result.get('page', {}).copy()
+    result['page']['count'] = len(all_videos)
+    
+    return result
 
-def extract_analytics_data(videos_data):
+def extract_basic_data(videos_data):
     """
-    从视频数据中提取用于分析的关键维度数据
+    从视频数据中提取基本数据（仅BV号用于后续详细数据获取）
     
     Args:
         videos_data (dict): 包含用户视频数据的字典
         
     Returns:
-        list: 包含用于分析的数据列表
+        list: 包含基本数据的列表
     """
-    analytics_data = []
+    basic_data = []
     
     # 遍历视频列表
     video_list = videos_data.get('list', {}).get('vlist', [])
     
     for video in video_list:
-        # 提取基本数据维度
+        # 只提取BV号，用于后续详细数据获取
         data_point = {
-            # 基本信息
             'title': video.get('title', ''),
             'bvid': video.get('bvid', ''),
             'typeid': video.get('typeid', 0),
             'created': video.get('created', 0),
             'length': video.get('length', ''),
-            
-            # 互动数据 - 从视频对象本身提取
-            'play': video.get('play', 0),      # 播放量
-            'comment': video.get('comment', 0)  # 评论数
+            'play': video.get('play', 0),
+            'comment': video.get('comment', 0)
         }
+        basic_data.append(data_point)
         
-        # 处理互动数据 - 检查是否有meta数据（系列视频）
-        meta = video.get('meta')
-        if meta and 'stat' in meta:
-            # 系列视频从meta.stat提取数据
-            stat = meta['stat']
-            data_point['like'] = stat.get('like', 0)      # 点赞数
-            data_point['coin'] = stat.get('coin', 0)      # 投币数
-            data_point['favorite'] = stat.get('favorite', 0)  # 收藏数
-            data_point['danmaku'] = stat.get('danmaku', 0)   # 弹幕数
-            data_point['share'] = stat.get('share', 0)    # 分享数
-        else:
-            # 普通视频暂时将互动数据设为0，需要通过其他API获取完整数据
-            data_point['like'] = 0
-            data_point['coin'] = 0
-            data_point['favorite'] = 0
-            data_point['danmaku'] = 0
-            data_point['share'] = 0
-            
-        analytics_data.append(data_point)
-        
-    return analytics_data
+    return basic_data
 
 def save_to_json(data, filename="user_videos_data.json"):
     """
@@ -96,14 +104,14 @@ def main():
         # 获取用户视频数据
         videos_data = sync(get_user_videos(TARGET_UID))
         
-        # 提取用于分析的数据
-        analytics_data = extract_analytics_data(videos_data)
+        # 提取基本数据
+        basic_data = extract_basic_data(videos_data)
         
         # 保存完整数据到文件
         save_to_json(videos_data, "user_videos_data.json")
         
-        # 保存分析用数据到单独文件
-        save_to_json(analytics_data, "analytics_data.json")
+        # 保存基本数据到单独文件
+        save_to_json(basic_data, "basic_data.json")
         
         # 输出基本信息
         print(f"成功获取用户 {TARGET_UID} 的视频数据")
