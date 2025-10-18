@@ -57,7 +57,7 @@ async def get_user_videos(uid):
 def extract_basic_data(videos_data):
     """
     从视频数据中提取基本数据（仅BV号用于后续详细数据获取）
-    
+
     Args:
         videos_data (dict): 包含用户视频数据的字典
         
@@ -102,7 +102,7 @@ def main():
     """
     try:
         # 获取用户视频数据
-        videos_data = sync(get_user_videos(TARGET_UID))
+        videos_data = sync(get_user_videos(TARGET_UID))# sync函数属于bilibili_api库
         
         # 提取基本数据
         basic_data = extract_basic_data(videos_data)
@@ -117,32 +117,8 @@ def main():
         print(f"成功获取用户 {TARGET_UID} 的视频数据")
         print(f"视频总数: {videos_data.get('page', {}).get('count', 0)}")
         print(f"当前页视频数: {len(videos_data.get('list', {}).get('vlist', []))}")
-        
-        # 显示前几个视频的基本信息
-        video_list = videos_data.get('list', {}).get('vlist', [])
-        print("\n最新视频信息:")
-        for i, video in enumerate(video_list[:5]):  # 显示前5个视频
-            print(f"{i+1}. 标题: {video.get('title', 'N/A')}")
-            print(f"   BV号: {video.get('bvid', 'N/A')}")
-            print(f"   播放量: {video.get('play', 'N/A')}")
-            print(f"   创建时间: {video.get('created', 'N/A')}")
-            print(f"   时长: {video.get('length', 'N/A')}")
-            
-            # 如果有meta数据，显示更多互动数据
-            meta = video.get('meta')
-            if meta and 'stat' in meta:
-                stat = meta['stat']
-                print(f"   点赞数: {stat.get('like', 'N/A')}")
-                print(f"   投币数: {stat.get('coin', 'N/A')}")
-                print(f"   收藏数: {stat.get('favorite', 'N/A')}")
-            print("-" * 40)
-            
-        # 显示分区信息
-        tlist = videos_data.get('list', {}).get('tlist', {})
-        print("\n分区分布:")
-        for typeid, info in tlist.items():
-            print(f"  {info.get('name', 'N/A')} (ID: {typeid}): {info.get('count', 0)} 个视频")
-            
+        print("Bro,everything is OK!")        
+          
     except Exception as e:
         print(f"获取数据时出错: {e}")
 

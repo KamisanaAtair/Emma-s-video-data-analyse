@@ -97,21 +97,7 @@ async def main():
     # 显示结果
     print("\n详细统计数据获取完成！")
     print(f"共处理 {len(detailed_stats)} 个视频")
-    
-    # 显示前几个视频的详细数据
-    print("\n前5个视频的详细统计数据:")
-    for i, data in enumerate(detailed_stats[:5]):
-        if data:
-            print(f"{i+1}. {data['title']}")
-            print(f"   BV号: {data['bvid']}")
-            print(f"   播放量: {data['play']}")
-            print(f"   点赞数: {data['like']}")
-            print(f"   投币数: {data['coin']}")
-            print(f"   收藏数: {data['favorite']}")
-            print(f"   弹幕数: {data['danmaku']}")
-            print(f"   分享数: {data['share']}")
-            print(f"   评论数: {data['comment']}")
-            print("-" * 40)
+    print("OK!go to the next step!")
 
 if __name__ == "__main__":
     sync(main())
